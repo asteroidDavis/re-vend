@@ -3,7 +3,7 @@
 #True means on, false off, and all numbers can be edited.  **Don't put strings in quotes!**
 
 [general]
-seconds_box_is_unlocked = 10
+seconds_box_is_unlocked = 2
 
 [motor]
 forwardSteps = 128

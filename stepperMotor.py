@@ -2,10 +2,12 @@
 import RPi.GPIO as GPIO
 import time
 
+GPIO.setmode(GPIO.BCM)
+
 class stepperMotor:
  
     #constructor
-    def __init__(self, frontSteps, backSteps, delay, coilPins, enablePin = 16):
+    def __init__(self, frontSteps, backSteps, delay, coilPins, enablePin=16):
         self.setupGPIO(enablePin, coilPins)
         #the number of steps to move dispensing one carabiner
         self.frontSteps = frontSteps
@@ -46,6 +48,9 @@ class stepperMotor:
  
     def forward(self):  
         for i in range(0, self.frontSteps):
+            print("moving step %d") %(i)
+            print("delay is %d") %(self.delay)
+            print("frontsteps are %d") %(self.frontSteps)
             self.setStep(1, 0, 1, 0)
             time.sleep(self.delay)
             self.setStep(0, 1, 1, 0)
@@ -54,6 +59,7 @@ class stepperMotor:
             time.sleep(self.delay)
             self.setStep(1, 0, 0, 1)
             time.sleep(self.delay)
+            print("End of step\n")
      
     def backwards(self):  
         for i in range(0, self.backSteps):
