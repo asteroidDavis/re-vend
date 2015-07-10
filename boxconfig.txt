@@ -1,0 +1,16 @@
+
+#This controls the status of all items connected to the Raspberry Pi
+#True means on, false off, and all numbers can be edited.  **Don't put strings in quotes!**
+
+[general]
+seconds_box_is_unlocked = 10
+
+[motor]
+forwardSteps = 128
+backwardsSteps = 128 
+delay = 0.005
+coilPins = [4,17,23,24]
+
+[light]
+redPin = 25
+greenPin = 26
