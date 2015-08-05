@@ -33,7 +33,7 @@ class Student:
             return False
 
     def isInputStudentId(self, idInput):
-        if(re.match('^%A([0-9]{9})=[0-9]{15}\?;([0-9]{16}=[0-9]{12}\?)?$', idInput)):
+        if(re.match(r'^%A[0-9]{9}=[0-9]{15}\?;([0-9]{16}=[0-9]{12}\?)?$', str(idInput))):
             return True
         else:
             return False
@@ -42,7 +42,7 @@ class Student:
         self.studentNumber = idInput[2:11]
 
     def isInputRFID(self, idInput):
-        if(re.match('^[0-9]{10}$', idInput)):
+        if(re.match(r'^[0-9]{10}$', str(idInput))):
             return True
         else:
             return False

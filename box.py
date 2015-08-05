@@ -31,10 +31,11 @@ def main():
     greenLight = light(config.getint("light", "greenPin"))
     redLight = light(config.getint("light", "redPin"))
     # ^ not worth reading ^
+
+    greenLight.off()
+    redLight.off()
     
     while 1:
-        greenLight.off()
-        redLight.off()
 
         currentStudent = Student(0, 0, False, 'students.db')
         
@@ -58,6 +59,6 @@ def main():
         else:
             redLight.on()
             greenLight.on()
-        time.sleep(5)
+
 main()
     
