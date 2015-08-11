@@ -7,7 +7,7 @@
 
 import ConfigParser #uses built in module to read config
 import ast # for lists in config
-import stepperMotor
+from solenoid import *
 import time
 from light import *
 from Student import *
@@ -27,7 +27,7 @@ def main():
     config = ConfigParser.RawConfigParser()
     config.read("boxconfig.txt") 
     waitSecs = config.getint("general","seconds_box_is_unlocked")
-    motor = stepperMotor.stepperMotor(config.getint("motor","forwardSteps"), config.getint("motor","backwardsSteps") , config.getfloat("motor","delay"), ast.literal_eval(config.get("motor","coilPins")))
+    lock = solenoid(config.getint("lock", "pin"), waitSecs)
     greenLight = light(config.getint("light", "greenPin"))
     redLight = light(config.getint("light", "redPin"))
     # ^ not worth reading ^
@@ -47,9 +47,7 @@ def main():
                 if(self.hasG2G):
                     redLight.off()
                     greenLight.on()
-                    motor.moveMotor(1)
-                    time.sleep(waitSecs)
-                    motor.moveMotor(-1)
+                    lock.unlockThenLock()
                 else:
                     redLight.on()
                     greenLight.off()
