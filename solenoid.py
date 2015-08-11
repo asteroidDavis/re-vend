@@ -29,7 +29,7 @@ class solenoid:
 
     #unlocks for the unlockTime
     def unlockThenLock(self):
-        self.lock()
-        time.sleep(self.unlockTime)
         self.unlock()
+        time.sleep(self.unlockTime)
+        self.lock()
 
