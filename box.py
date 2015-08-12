@@ -7,6 +7,7 @@
 
 import ConfigParser #uses built in module to read config
 import ast # for lists in config
+import struct
 from solenoid import *
 import time
 from light import *
