@@ -22,6 +22,8 @@ if($rfidKeyboard) {
     $rfidKeyboard = "/dev/input/$rfidKeyboard";
     print "RFID keyboard: $rfidKeyboard\n";
     #lauch box workflow
+    my @boxWorkflowArgs = split(/\s+/, "/opt/re-vend/box.py -k $rfidKeyboard");
+    system("/usr/bin/python @boxWorkflowArgs 1>/var/log/revend/box 2>&1");
 }
 else {
     #sends an email to the admin if no rfid keyboard event is found
