@@ -12,6 +12,7 @@ import ConfigParser
 import time
 from light import *
 from Student import *
+import re
 
 def main():
     config = ConfigParser.RawConfigParser()
@@ -19,7 +20,7 @@ def main():
     waitSecs = config.getint("general","seconds_lights_on")
     
     #sets up the socket
-    boxSocket = socket.socket()
+    posSocket = socket.socket()
     host = config.get("database", "host")
     port = config.getint("database", "port")
     responseSize = config.getint("database","responseSize") 
@@ -27,9 +28,7 @@ def main():
     greenLight = light(config.getint("light", "greenPin"))
     redLight = light(config.getint("light", "redPin"))
    
-    (rfidKeyboard, magneticKeyboard) = getKeyboards() 
-    rfidKeyboard = InputDevice(rfidKeyboard)
-    magneticKeyboard = InputDevice(magneticKeyboard) 
+    (rfidKeyboard, magneticKeyboard) = getKeyboards()  
     
     greenLight.off()
     redLight.off()
@@ -48,7 +47,7 @@ def main():
         if(currentStudent.isInputStudentId(idInput)):
             #sets studentNumber to scanned card
             currentStudent.setStudentNumber(idInput)
-            currentStudent.setHasG2G(reportId(idInput, host, port, responseSize))
+            currentStudent.setHasG2G(reportId(idInput,posSocket, host, port, responseSize))
             if(currentStudent.hasG2G):
                 #Red light
                 redLight.on()
@@ -62,7 +61,7 @@ def main():
                     idInput = readKeyboards(rfidKeyboard, magneticKeyboard)
                 redLight.off()
                 greenLight.on()
-                reportRfid(idInput, host, port, responseSize)
+                reportRfid(idInput, posSocket, host, port)
         #RFID first workflow
         elif(currentStudent.isInputRFID(idInput)):
             currentStudent.setRFIDCode(idInput)
@@ -72,35 +71,31 @@ def main():
                 greenLight.on()
                 idInput = readKeyboards(rfidKeyboard, magneticKeyboard)
             currentStudent.setStudentNumber(idInput)
-            currentStudent.setHasG2G(reportId(idInput, host, port, responseSize))
+            currentStudent.setHasG2G(reportId(idInput, posSocket, host, port, responseSize))
             if(currentStudent.hasG2G):
                 greenLight.off()
                 redLight.on()
             else:
                 redLight.off()
                 greenLight.on()
-                reportRfid(currentStudent.RFIDCode, host, port)
-                currentStudent.updateStudentDatabase()
+                reportRfid(currentStudent.RFIDCode,posSocket, host, port)
         else:
             redLight.on()
             greenLight.on()
 
 def reportRfid(rfid, posSocket, host, port):
-    posSocket.connect((host, port))
     sent = posSocket.send(rfid)
     if(sent == 0):
         raise RuntimeError("socket connection broken")
     posSocket.close()
 
-def reportId(studentId, socket, host, port, responseSize):
-    posSocket = socket
+def reportId(studentId, posSocket, host, port, responseSize):
     posSocket.connect((host, port))
     sent = posSocket.send(studentId)
     if(sent == 0):
         raise RuntimeError("socket connection broken")
     #expecting an integer reply 1 means student is ok 0 means student is not ok 
     posResponse = struct.unpack('<I', posSocket.recv(8))
-    posSocket.close()
     if(posResponse == 1):
         print("student has no g2g containter")
         return True
@@ -116,7 +111,7 @@ def getKeyboards():
     args = parser.parse_args()
     return (args.rfidKeyboard, args.magneticKeyboard)
 
-def readKeyboards(rfidKeyboard, magneticKeyoard):
+def readKeyboards(rfidKeyboard, magneticKeyboard):
 
     scancodes = {
         0: None, 1: u'ESC', 2: u'1', 3: u'2', 4: u'3', 5: u'4', 6: u'5', 7: u'6', 8: u'7', 9: u'8',
@@ -124,31 +119,43 @@ def readKeyboards(rfidKeyboard, magneticKeyoard):
         20: u'T', 21: u'Y', 22: u'U', 23: u'I', 24: u'O', 25: u'P', 26: u'[', 27: u']', 28: u'CRLF', 29: u'LCTRL',
         30: u'A', 31: u'S', 32: u'D', 33: u'F', 34: u'G', 35: u'H', 36: u'J', 37: u'K', 38: u'L', 39: u';',
         40: u'"', 41: u'`', 42: u'LSHFT', 43: u'\\', 44: u'Z', 45: u'X', 46: u'C', 47: u'V', 48: u'B', 49: u'N',
-        50: u'M', 51: u',', 52: u'.', 53: u'/', 54: u'RSHFT', 56: u'LALT', 100: u'RALT'
+        50: u'M', 51: u',', 52: u'.', 53: u'/', 54: u'RSHFT', 56: u'LALT', 100: u'RALT' 
     }
 
 
     idInput = '';
-    for rfidEvent in rfidKeyboard.read_loop():
-        if(rfidEvent.type == ecodes.EV_KEY):
-            rfidData = categorize(rfidEvent)
-            if(rfidData.keystate == 1):
-                key_lookup = scancodes.get(rfidData.scancode)
-                if(key_lookup.isdigit()):
-                    idInput += format(key_lookup)
-        if(len(idInput) == 10):
-            return idInput
-        
-    for magneticKeyboard in magneticKeyboard.read_loop():
-        if(magneticEvent.type == ecodes.EV_KEY):
-            magneticData = categorize(magneticEvent)
-            if(magneticData.keystate == 1):
-                key_lookup = scancodes.get(magneticData.scancode)
-                if(key_lookup.isdigit()):
-                    idInput += format(key_lookup)
-        if(len(idInput) == 28):
-            return idInput
+    skipNextKey = 0
 
-               
+    devices = map(InputDevice, (rfidKeyboard, magneticKeyboard))
+    devices = {dev.fd: dev for dev in devices}
+    print("Scan rfid or studentId")    
+
+    while devices:
+        r,w,x = select(devices, [], [])
+        for fd in r:
+            for event in devices[fd].read():
+                if(skipNextKey == 1):
+                    if(event.type == ecodes.EV_KEY):
+                        data = categorize(event)
+                        if(data.keystate == 1):
+                            skipNextKey = 0
+                            next
+                    else:
+                        next
+                elif(event.type == ecodes.EV_KEY):
+                    data = categorize(event)
+                    if(data.keystate == 1):
+                        key_lookup = scancodes.get(data.scancode)
+                        print(key_lookup)
+                        if(re.match(r'^[0-9]$', str(key_lookup))):
+                            idInput += format(key_lookup)
+                        elif(key_lookup == '=' or key_lookup == 'CRLF'): 
+                            print("Keyboard entered: ", idInput)
+                            return str(idInput)
+                        elif(str(key_lookup) == 'LSHFT' or key_lookup == 'RSHFT'):
+                            print("found ", str(key_lookup), " skipping next character")
+                            skipNextKey = 1
+                            next                        
+   
 main()
 
