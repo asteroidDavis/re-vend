@@ -17,18 +17,13 @@ from light import *
 import socket
 from Student import *
 
-
     
-def reportTray(rfid, socket, host, port, responseSize):
-    return True
-    boxSocket = socket
-    boxSocket.connect((host, port))
+def reportTray(rfid, boxSocket, host, port, responseSize):
     sent = boxSocket.send(rfid)
     if(sent == 0):
         raise RuntimeError("socket connection broken")
     #expecting an integer reply 1 means student is ok 0 means student is not ok 
     boxResponse = struct.unpack('<I', boxSocket.recv(8))
-    boxSocket.close()
     if(boxResponse == 1):
         print("student returned g2g containter")
         return True
@@ -40,12 +35,13 @@ def main():
     #sets up the box config parser
     config = ConfigParser.RawConfigParser()
     config.read("/opt/re-vend/boxconfig.txt") 
-
+ 
     #sets up the socket
     boxSocket = socket.socket()
     host = config.get("database", "host")
     port = config.getint("database", "port")
     responseSize = config.getint("database","responseSize") 
+    boxSocket.connect((host, port))    
 
     #sets up the solenoid
     waitSecs = config.getint("general","seconds_box_is_unlocked")
