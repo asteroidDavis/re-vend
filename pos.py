@@ -24,7 +24,7 @@ def main():
     host = config.get("database", "host")
     port = config.getint("database", "port")
     responseSize = config.getint("database","responseSize") 
-
+    
     greenLight = light(config.getint("light", "greenPin"))
     redLight = light(config.getint("light", "redPin"))
    
@@ -35,7 +35,9 @@ def main():
 
     while rfidKeyboard and magneticKeyboard:
         
-        idInput = readKeyboards(rfidKeyboard, magneticKeyboard)            
+        idInput = readKeyboards(rfidKeyboard, magneticKeyboard)           
+        print("Connecting to ", host)
+        posSocket.connect((host, port))        
 
         currentStudent = Student(0, 0, False, 'students.db')
  
@@ -82,21 +84,21 @@ def main():
         else:
             redLight.on()
             greenLight.on()
+        print("closing connection with", host)
+        posSocket.close()
 
 def reportRfid(rfid, posSocket, host, port):
     sent = posSocket.send(rfid)
     if(sent == 0):
         raise RuntimeError("socket connection broken")
-    posSocket.close()
 
 def reportId(studentId, posSocket, host, port, responseSize):
-    posSocket.connect((host, port))
     sent = posSocket.send(studentId)
     if(sent == 0):
         raise RuntimeError("socket connection broken")
     #expecting an integer reply 1 means student is ok 0 means student is not ok 
     posResponse = struct.unpack('<I', posSocket.recv(8))
-    if(posResponse == 1):
+    if(posResponse == 0):
         print("student has no g2g containter")
         return True
     else:
@@ -124,7 +126,6 @@ def readKeyboards(rfidKeyboard, magneticKeyboard):
 
 
     idInput = '';
-    skipNextKey = 0
 
     devices = map(InputDevice, (rfidKeyboard, magneticKeyboard))
     devices = {dev.fd: dev for dev in devices}
@@ -134,28 +135,22 @@ def readKeyboards(rfidKeyboard, magneticKeyboard):
         r,w,x = select(devices, [], [])
         for fd in r:
             for event in devices[fd].read():
-                if(skipNextKey == 1):
-                    if(event.type == ecodes.EV_KEY):
-                        data = categorize(event)
-                        if(data.keystate == 1):
-                            skipNextKey = 0
-                            next
-                    else:
-                        next
-                elif(event.type == ecodes.EV_KEY):
+                if(event.type == ecodes.EV_KEY):
                     data = categorize(event)
                     if(data.keystate == 1):
                         key_lookup = scancodes.get(data.scancode)
-                        print(key_lookup)
-                        if(re.match(r'^[0-9]$', str(key_lookup))):
-                            idInput += format(key_lookup)
-                        elif(key_lookup == '=' or key_lookup == 'CRLF'): 
-                            print("Keyboard entered: ", idInput)
+                        if(key_lookup == 'CRLF'):
+                            print("Keyboar entered: ", idInput)
                             return str(idInput)
-                        elif(str(key_lookup) == 'LSHFT' or key_lookup == 'RSHFT'):
-                            print("found ", str(key_lookup), " skipping next character")
-                            skipNextKey = 1
-                            next                        
-   
+                        elif(key_lookup == None):  
+                            print("Keyboard entered: ", idInput)
+                            magCapture = re.search(r'A([0-9]{9})=', idInput)
+                            idInput = magCapture.group(1)
+                            print("Captured ", idInput)
+                            return str(idInput)
+                        else:
+                            idInput += format(key_lookup)
+
+#LSHFT5LSHFTA982215342=217111009262013LSHFT   
 main()
 

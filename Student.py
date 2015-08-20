@@ -33,7 +33,7 @@ class Student:
             return False
 
     def isInputStudentId(self, idInput):
-        if(re.match(r'^[0-9]{9}?$', str(idInput))):
+        if(re.match(r'^[0-9]{9}$', str(idInput))):
             return True
         else:
             return False
@@ -89,14 +89,17 @@ class Student:
     def updateStudentDatabase(self):
         #create the student database if it's not created
         self.studentCursor.execute('''CREATE TABLE IF NOT EXISTS studentG2G(
-            Id          INT PRIMARY KEY,
+            Id          INT,
             RFID        INT,
             Green2Go    BOOLEAN
         )''')
-        #adds a student
         self.studentConnection.execute('''
-            INSERT INTO studentG2G (Id, RFID, Green2Go)
-            VALUES (?, ?, ?)''', (self.studentNumber, self.RFIDCode, self.hasG2G.astype(int),)
+            INSERT OR REPLACE INTO studentG2G(Id, RFID, Green2Go)
+            VALUES(
+                COALESCE((SELECT Id FROM studentG2G WHERE Id=?), ?),
+                ?,
+                ?
+            )''', (self.studentNumber, self.studentNumber, self.RFIDCode, self.Green2Go,)
         )
         #commits the update after each new student
         self.studentConnection.commit()
