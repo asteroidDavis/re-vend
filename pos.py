@@ -20,7 +20,6 @@ def main():
     waitSecs = config.getint("general","seconds_lights_on")
     
     #sets up the socket
-    posSocket = socket.socket()
     host = config.get("database", "host")
     port = config.getint("database", "port")
     responseSize = config.getint("database","responseSize") 
@@ -31,14 +30,16 @@ def main():
     (rfidKeyboard, magneticKeyboard) = getKeyboards()  
     
     greenLight.off()
-    redLight.off()
+    redLight.off() 
+    
+    #print("Connecting to ", host)
+    #posSocket.connect((host, port))
+
 
     while rfidKeyboard and magneticKeyboard:
         
         idInput = readKeyboards(rfidKeyboard, magneticKeyboard)           
-        print("Connecting to ", host)
-        posSocket.connect((host, port))        
-
+        
         currentStudent = Student(0, 0, False, 'students.db')
  
         #process to allow id input in any order and validates the student does not have a G2G container
@@ -49,6 +50,11 @@ def main():
         if(currentStudent.isInputStudentId(idInput)):
             #sets studentNumber to scanned card
             currentStudent.setStudentNumber(idInput)
+        
+            print("Connecting to ", host)
+            posSocket = socket.socket()
+            posSocket.connect((host, port))
+
             currentStudent.setHasG2G(reportId(idInput,posSocket, host, port, responseSize))
             if(currentStudent.hasG2G):
                 #Red light
@@ -72,6 +78,11 @@ def main():
                 redLight.on()
                 greenLight.on()
                 idInput = readKeyboards(rfidKeyboard, magneticKeyboard)
+
+            print("Connecting to ", host)
+            posSocket = socket.socket()
+            posSocket.connect((host, port))
+
             currentStudent.setStudentNumber(idInput)
             currentStudent.setHasG2G(reportId(idInput, posSocket, host, port, responseSize))
             if(currentStudent.hasG2G):
@@ -100,10 +111,10 @@ def reportId(studentId, posSocket, host, port, responseSize):
     posResponse = struct.unpack('<I', posSocket.recv(8))
     if(posResponse == 0):
         print("student has no g2g containter")
-        return True
+        return False
     else:
         print("student already has g2g containter")
-        return False
+        return True
 
 def getKeyboards():
     #tries to use the keyboard option

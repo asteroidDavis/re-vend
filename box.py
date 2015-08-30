@@ -18,30 +18,22 @@ import socket
 from Student import *
 
     
-def reportTray(rfid, boxSocket, host, port, responseSize):
+def reportTray(rfid, boxSocket, host, port):
     sent = boxSocket.send(rfid)
     if(sent == 0):
         raise RuntimeError("socket connection broken")
-    #expecting an integer reply 1 means student is ok 0 means student is not ok 
-    boxResponse = struct.unpack('<I', boxSocket.recv(8))
-    if(boxResponse == 1):
-        print("student returned g2g containter")
-        return True
-    else:
-        print("unrecognized g2g containter")
-        return False
+    #returns 1 on success
+    else: 
+        return 1
 
 def main():
     #sets up the box config parser
     config = ConfigParser.RawConfigParser()
     config.read("/opt/re-vend/boxconfig.txt") 
  
-    #sets up the socket
-    boxSocket = socket.socket()
+    #sets up the socket information
     host = config.get("database", "host")
-    port = config.getint("database", "port")
-    responseSize = config.getint("database","responseSize") 
-    boxSocket.connect((host, port))    
+    port = config.getint("database", "port")   
 
     #sets up the solenoid
     waitSecs = config.getint("general","seconds_box_is_unlocked")
@@ -96,14 +88,19 @@ def main():
                 break
 
         print("idInput is %d" %int(idInput))
- 
+        print("Connecting to %s:%s " %(host, port))
+        #sets up the socket
+        boxSocket = socket.socket()
+        boxSocket.connect((host, port)) 
+
         #checks if the user is scanning one of our rfid tags
-        if(currentStudent.isInputRFID(idInput)): #report tray and open box 
-            if(reportTray(idInput, boxSocket, host, port, responseSize)):
+        if(currentStudent.isInputRFID(idInput)): 
+            print("RFID scanned. Unlocking box")
+            lock.unlockThenLock()
+            if(reportTray(idInput, boxSocket, host, port)):
                 print("RFID accepted")
                 greenLight.on()
                 redLight.off()
-                lock.unlockThenLock()
             else:
                 print("RFID rejected")
                 greenLight.off()
@@ -113,6 +110,7 @@ def main():
             greenLight.on()
             redLight.on()
 
+        boxSocket.close()
         #gets new input from the rfid scanner
         print("Scan an rfid tag")       
 
