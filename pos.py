@@ -109,7 +109,8 @@ def reportId(studentId, posSocket, host, port, responseSize):
         raise RuntimeError("socket connection broken")
     #expecting an integer reply 1 means student is ok 0 means student is not ok 
     posResponse = struct.unpack('<I', posSocket.recv(8))
-    if(posResponse == 0):
+    print("recieved ", posResponse)
+    if(posResponse[0] == 0):
         print("student has no g2g containter")
         return False
     else:
