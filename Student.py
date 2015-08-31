@@ -51,35 +51,42 @@ class Student:
         self.RFIDCode = idInput
         
     def isStudentInDB(self):
-        
+        print("Looking for studentNumber %s or RFIDCode %s" %(self.studentNumber, self.RFIDCode)) 
         if(self.isInputStudentId(self.studentNumber)):
             #checks if the student is already in the database
-            self.studentConnection.execute(''' SELECT EXISTS(
-                SELECT 1 FROM studentG2G WHERE
-                Id=?)''', (self.studentNumber, )
+            self.studentCursor.execute('''
+                SELECT Id FROM studentG2G WHERE
+                Id=?''', (self.studentNumber, )
             )
         elif(self.isInputRFID(self.RFIDCode)):
-            self.studentConnection.execute(''' SELECT EXISTS(
-                SELECT 1 FROM studentG2G WHERE
-                RFID=?)''', (self.RFIDCode, )
+            self.studentCursor.execute('''
+                SELECT Id FROM studentG2G WHERE
+                RFID=?''', (self.RFIDCode, )
             )
-
-        if(self.studentCursor.fetchone()):
+        queryResult = self.studentCursor.fetchone()
+        print("Found a student in the DB? ", queryResult)
+        if(queryResult):
             return True
         else:
+            print("Could not find student with studentNumber %s or RFIDCODE %s"  %(self.studentNumber, self.RFIDCode))
             return False
 
     def setHasG2GFromDB(self):
-        if(self.isStudentInDB):
-            self.studentCursor.execute('''SELECT Green2Go FROM studentG2G WHERE Id=?''',(self.studentNumber,))
-            self.hasG2G = self.studentCursor.fetchone()
+        if(self.isStudentInDB()):
+            if(self.isInputStudentId(self.studentNumber)):
+                self.studentCursor.execute('''SELECT Green2Go FROM studentG2G WHERE Id=?''',(self.studentNumber,))
+            elif(self.isInputRFID(self.RFIDCode)):
+                self.studentCursor.execute('''SELECT Green2Go FROM studentG2G WHERE RFID=?''', (self.RFIDCode,))
+            self.hasG2G = self.studentCursor.fetchone()[0]
+            print("hasG2G set to ", self.hasG2G)
         else:
+            print("No student found. Setting hasG2G to False")
             self.hasG2G = False
 
     def setStudentNumberFromDB(self):
         if(self.isStudentInDB):
             self.studentCursor.execute('''SELECT Id FROM studentG2G WHERE RFID=?''', (self.RFIDCode,))
-            self.studentNumber = self.studentCursor.fetchone()
+            self.studentNumber = self.studentCursor.fetchone()[0]
         else:
             warnings.warn('Student RFID has no associated studentNumber')
 
@@ -93,17 +100,34 @@ class Student:
             RFID        INT,
             Green2Go    BOOLEAN
         )''')
-        self.studentConnection.execute('''
-            INSERT OR REPLACE INTO studentG2G(Id, RFID, Green2Go)
-            VALUES(
-                COALESCE((SELECT Id FROM studentG2G WHERE Id=?), ?),
-                ?,
-                ?
-            )''', (self.studentNumber, self.studentNumber, self.RFIDCode, self.Green2Go,)
-        )
+        #updates the RFID and Green2Go value if the student is in the database
+        if(self.isStudentInDB()):
+            #we should only add the RFID if it's new otherwise clear the RFID value
+            if(self.RFIDCode == self.getRfidFromDB()):
+                 self.studentConnection.execute('''
+                    UPDATE studentG2G
+                    SET RFID=?, Green2Go=?
+                    WHERE Id=? OR RFID=?''', (0, self.hasG2G, self.studentNumber, self.RFIDCode,)
+                )
+            elif(self.getRfidFromDB() == 0):
+                self.studentConnection.execute('''
+                    UPDATE studentG2G
+                    SET RFID=?, Green2Go=?
+                    WHERE Id=? OR RFID=?''', (self.RFIDCode, self.hasG2G, self.studentNumber, self.RFIDCode,)
+                )
+        #adds a new student if the current student is not in the database
+        else:
+            self.studentConnection.execute('''
+                INSERT INTO studentG2G(Id, RFID, Green2Go)
+                VALUES(?, ?, ?) ''', (self.studentNumber, self.RFIDCode, self.hasG2G,)
+            )
         #commits the update after each new student
         self.studentConnection.commit()
-        
+
+    def getRfidFromDB(self):
+        self.studentCursor.execute('''SELECT RFID FROM studentG2G WHERE Id=?''',(self.studentNumber,))
+        return self.studentCursor.fetchone()[0]
+ 
     def removeStudentFromDatabase(self):
         
         #removes this student from the database
