@@ -36,7 +36,7 @@ exit 0;
 #sends an email to the admin in the boxconfig.txt file
 sub alertAdmin {
     #uses the boxconfig.txt for the box workflows
-    my $config = new Config::Simple('boxconfig.txt');
+    my $config = new Config::Simple('posconfig.txt');
     my $generalConfig = $config->param(-block=>'general');
 
     #gets the ip so the admin knows which machine is down
