@@ -1,11 +1,7 @@
 #!/usr/bin/python
 #By Chris Schoener and Nate Davis, Python 2.7
 
-#TODO: 1) report tray to EC2 and receive response
-#      2) add proper values to cfg (motor steps, light ports) and test
-
 import ConfigParser #uses built in module to read config
-import ast # for lists in config
 from evdev import InputDevice, categorize, ecodes
 from select import select
 import struct
@@ -13,7 +9,6 @@ import argparse
 import sys
 from solenoid import *
 import time
-from light import *
 import socket
 from Student import *
 
@@ -39,10 +34,6 @@ def main():
     waitSecs = config.getint("general","seconds_box_is_unlocked")
     lock = solenoid(config.getint("lock", "pin"), waitSecs)
 
-    #sets up the lights
-    greenLight = light(config.getint("light", "greenPin"))
-    redLight = light(config.getint("light", "redPin"))
-
     #ascii table for readin keyboard events
     scancodes = {
         0: None, 1: u'ESC', 2: u'1', 3: u'2', 4: u'3', 5: u'4', 6: u'5', 7: u'6', 8: u'7', 9: u'8',
@@ -60,9 +51,6 @@ def main():
     #reads a keyboard event
     print("Scan an rfid tag")
 
-    greenLight.off()
-    redLight.off()
-    
     #ensures there is an input device
     while rfidKeyboard:
 
@@ -99,16 +87,10 @@ def main():
             lock.unlockThenLock()
             if(reportTray(idInput, boxSocket, host, port)):
                 print("RFID accepted")
-                greenLight.on()
-                redLight.off()
             else:
                 print("RFID rejected")
-                greenLight.off()
-                redLight.on()
         else:
             print("Invalid input")
-            greenLight.on()
-            redLight.on()
 
         boxSocket.close()
         #gets new input from the rfid scanner
