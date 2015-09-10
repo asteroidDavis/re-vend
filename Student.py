@@ -137,3 +137,11 @@ class Student:
         #commits the update after each student is removed
         self.studentConnection.commit()
         self.studentConnection.close()
+     
+    #rests the HasG2G value to false then updates the DB    
+    def resetHasG2G(self):
+        self.setHasG2G(False)
+        self.setRFIDCode(0)
+        self.updateStudentDatabase()
+        
+        

@@ -163,6 +163,5 @@ def readKeyboards(rfidKeyboard, magneticKeyboard):
                         else:
                             idInput += format(key_lookup)
 
-#LSHFT5LSHFTA982215342=217111009262013LSHFT   
 main()
 

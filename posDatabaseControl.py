@@ -50,9 +50,21 @@ def checkStudentId(idInput, currentStudent):
         print("Unrecognized input")
         return (1, currentStudent)
 
+#performs the correct update based on the recieved RFID code
 def addRfid(idInput, currentStudent):
-    currentStudent.setRFIDCode(idInput)
-    currentStudent.setHasG2G(1)
-    currentStudent.updateStudentDatabase()
+    #first checks if a reset code has been scanned
+    if(isRfidInputReset(idInput)):
+        #marks the student as not having an rfid 
+        currentStudent.resetHasG2G()
+    else:
+        #sets the students recieved values
+        currentStudent.setRFIDCode(idInput)
+        currentStudent.setHasG2G(1)
+        #updates the DB
+        currentStudent.updateStudentDatabase()
+
+#checks the RFID input for a reset code
+def isRfidInputReset(RfidInput):
+    return (RfidInput == '0123456789')
 
 main()
