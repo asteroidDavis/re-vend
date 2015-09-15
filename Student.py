@@ -148,7 +148,7 @@ class Student:
     def doesStudentTableExist(self):
         self.studentCursor.execute('''
             SELECT name FROM studentG2G WHERE type='table' AND name=?''',
-            %(self.studentDataBase,)
+            (self.studentDataBase,)
         )
         
         print(self.studentCursor.fetchone())
