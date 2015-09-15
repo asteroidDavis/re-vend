@@ -143,5 +143,18 @@ class Student:
         self.setHasG2G(False)
         self.setRFIDCode(0)
         self.updateStudentDatabase()
+    
+    #searches for the studentG2G table. Returns True if it's found
+    def doesStudentTableExist(self):
+        self.studentCursor.execute('''
+            SELECT name FROM studentG2G WHERE type='table' AND name=?''',
+            %(self.studentDataBase,)
+        )
+        
+        print(self.studentCursor.fetchone())
+        if(self.studentCursor.fetchone()[0] == '1'):
+            return True
+        else:
+            return False
         
         
