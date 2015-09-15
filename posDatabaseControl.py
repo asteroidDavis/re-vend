@@ -38,13 +38,18 @@ def main():
 
 def checkStudentId(idInput, currentStudent):
     if(currentStudent.isInputStudentId(idInput)):
-        currentStudent.setStudentNumber(idInput)
-        currentStudent.setHasG2GFromDB()
-        if(currentStudent.hasG2G):
-            print("Student already has G2G")
-            return (1, currentStudent)
+        if(currentStudent.doesStudentTableExist()):
+            currentStudent.setStudentNumber(idInput)
+            currentStudent.setHasG2GFromDB()
+            if(currentStudent.hasG2G):
+                print("Student already has G2G")
+                return (1, currentStudent)
+            else:
+                print("Student does not have G2G")
+                return (0, currentStudent)
         else:
-            print("Student does not have G2G")
+            currentStudent.setStudentNumber(idInput)
+            print('Student Table not started. Using empty student')
             return (0, currentStudent)
     else:
         print("Unrecognized input")
@@ -66,5 +71,7 @@ def addRfid(idInput, currentStudent):
 #checks the RFID input for a reset code
 def isRfidInputReset(RfidInput):
     return (RfidInput == '0123456789')
+
+
 
 main()

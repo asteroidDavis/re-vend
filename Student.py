@@ -146,15 +146,17 @@ class Student:
     
     #searches for the studentG2G table. Returns True if it's found
     def doesStudentTableExist(self):
-        self.studentCursor.execute('''
-            SELECT name FROM studentG2G WHERE type='table' AND name=?''',
-            (self.studentDataBase,)
-        )
-        
-        print(self.studentCursor.fetchone())
-        if(self.studentCursor.fetchone()[0] == '1'):
-            return True
-        else:
+        try:
+            self.studentCursor.execute('''
+                SELECT name FROM sqlite_master WHERE type='table' and name=studentG2G '''
+            )
+            
+            print(self.studentCursor.fetchone())
+            if(self.studentCursor.fetchone()[0] == '1'):
+                return True
+            else:
+                return False
+        except sqlite3.OperationalError: 
             return False
         
         
