@@ -1,0 +1,2 @@
+<Database>
+	<Version Number="1"><![CDATA[CREATE TABLE studentG2G ( Id INT, RFID INT, Green2Go Boolean);]]></Version></Database>
